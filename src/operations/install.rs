@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::constants::{REPO_DIR, SCHEMES_REPO_NAME, SCHEMES_REPO_URL};
+use crate::constants::{REPO_DIR, SCHEMES_REPO_NAME, SCHEMES_REPO_REVISION, SCHEMES_REPO_URL};
 use crate::utils::git_clone;
 use anyhow::{anyhow, Result};
 use std::fs::{remove_file as remove_symlink, symlink_metadata};
@@ -11,10 +11,11 @@ fn install_git_url(
     data_item_path: &Path,
     item_name: &str,
     item_git_url: &str,
+    revision: Option<&str>,
     is_quiet: bool,
 ) -> Result<()> {
     if !data_item_path.is_dir() {
-        git_clone(item_git_url, data_item_path)?;
+        git_clone(item_git_url, data_item_path, revision)?;
 
         if !is_quiet {
             println!("{} installed", item_name);
@@ -86,6 +87,7 @@ pub fn install(config_path: &Path, data_path: &Path, is_quiet: bool) -> Result<(
                 &data_item_path,
                 item.name.as_str(),
                 item.path.as_str(),
+                item.revision.as_deref(),
                 is_quiet,
             )?,
             Err(_) => install_dir(&data_item_path, item.name.as_str(), &item_path, is_quiet)?,
@@ -98,6 +100,7 @@ pub fn install(config_path: &Path, data_path: &Path, is_quiet: bool) -> Result<(
         &schemes_repo_path,
         SCHEMES_REPO_NAME,
         SCHEMES_REPO_URL,
+        Some(SCHEMES_REPO_REVISION),
         is_quiet,
     )?;
 

@@ -29,11 +29,13 @@ pub struct ConfigItem {
     pub supported_systems: Option<Vec<SchemeSystem>>,
     #[serde(rename = "theme-file-extension")]
     pub theme_file_extension: Option<String>,
+    pub revision: Option<String>,
 }
 
 impl fmt::Display for ConfigItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hook = self.hook.clone().unwrap_or_default();
+        let revision = self.revision.clone().unwrap_or_default();
         let default_supported_systems = vec![SchemeSystem::default()];
         let system_text = self
             .supported_systems
@@ -51,6 +53,9 @@ impl fmt::Display for ConfigItem {
         writeln!(f, "path = \"{}\"", self.path)?;
         if !hook.is_empty() {
             writeln!(f, "hook = \"{}\"", hook)?;
+        }
+        if !revision.is_empty() {
+            writeln!(f, "revision = \"{}\"", revision)?;
         }
         writeln!(f, "supported-systems = [{}]", system_text)?;
         write!(f, "themes-dir = \"{}\"", self.themes_dir)
@@ -108,6 +113,7 @@ impl Config {
             hook: Some(BASE16_SHELL_HOOK.to_string()),
             supported_systems: Some(vec![SchemeSystem::Base16]), // DEFAULT_SCHEME_SYSTEM
             theme_file_extension: None,
+            revision: None,
         };
 
         // Add default `item` if no items exist

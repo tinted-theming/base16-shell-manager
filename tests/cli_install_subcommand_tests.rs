@@ -1,5 +1,7 @@
 mod utils;
 
+use std::{process::Command, str};
+
 use crate::utils::{setup, write_to_file};
 use anyhow::Result;
 
@@ -162,5 +164,197 @@ fn test_cli_install_subcommand_with_setup_quiet_flag() -> Result<()> {
     );
 
     cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn test_cli_install_subcommand_with_tag_revision() -> Result<()> {
+    // -------
+    // Arrange
+    // -------
+    let (config_path, repo_path, command_vec, cleanup) =
+        setup("test_cli_install_subcommand_with_tag_revision", "install")?;
+    let config_content = r##"[[items]]
+path = "https://github.com/tinted-theming/tinted-jqp"
+name = "tinted-jqp"
+themes-dir = "themes"
+revision = "tinty-test-tag-01"
+"##;
+    write_to_file(&config_path, config_content)?;
+
+    let mut repo_path = repo_path.clone();
+    repo_path.push("repos");
+    repo_path.push("tinted-jqp");
+
+    // ---
+    // Act
+    // ---
+    let (_, _) = utils::run_command(command_vec).unwrap();
+
+    let output = Command::new("git")
+        .current_dir(repo_path)
+        .args(vec!["rev-parse", "--verify", "HEAD"])
+        .output()
+        .expect("Failed to execute git rev-parse --verify HEAD");
+
+    let stdout = str::from_utf8(&output.stdout).expect("Not valid UTF-8");
+
+    // ------
+    // Assert
+    // ------
+    let expected_revision = "b6c6a7803c2669022167c9cfc5efb3dc3928507d";
+    let has_match = stdout.lines().any(|line| line == expected_revision);
+    cleanup()?;
+    assert!(
+        has_match == true,
+        "Expected revision {} not found",
+        expected_revision,
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_install_subcommand_with_branch_revision() -> Result<()> {
+    // -------
+    // Arrange
+    // -------
+    let (config_path, repo_path, command_vec, cleanup) = setup(
+        "test_cli_install_subcommand_with_branch_revision",
+        "install",
+    )?;
+    let config_content = r##"[[items]]
+path = "https://github.com/tinted-theming/tinted-jqp"
+name = "tinted-jqp"
+themes-dir = "themes"
+revision = "tinty-test-01"
+"##;
+    write_to_file(&config_path, config_content)?;
+
+    // ---
+    // Act
+    // ---
+    let (_, _) = utils::run_command(command_vec).unwrap();
+
+    let mut repo_path = repo_path.clone();
+    repo_path.push("repos");
+    repo_path.push("tinted-jqp");
+
+    let output = Command::new("git")
+        .current_dir(repo_path)
+        .args(vec!["rev-parse", "--verify", "HEAD"])
+        .output()
+        .expect("Failed to execute git rev-parse --verify HEAD");
+
+    let stdout = str::from_utf8(&output.stdout).expect("Not valid UTF-8");
+
+    // ------
+    // Assert
+    // ------
+    let expected_revision = "43b36ed5eadad59a5027e442330d2485b8607b34";
+    let has_match = stdout.lines().any(|line| line == expected_revision);
+    cleanup()?;
+    assert!(
+        has_match == true,
+        "Expected revision {} not found",
+        expected_revision,
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_install_subcommand_with_commit_sha1_revision() -> Result<()> {
+    // -------
+    // Arrange
+    // -------
+    let (config_path, repo_path, command_vec, cleanup) = setup(
+        "test_cli_install_subcommand_with_commit_sha1_revision",
+        "install",
+    )?;
+    let config_content = r##"[[items]]
+path = "https://github.com/tinted-theming/tinted-jqp"
+name = "tinted-jqp"
+themes-dir = "themes"
+revision = "f998d17414a7218904bb5b4fdada5daa2b2d9d5e"
+"##;
+    write_to_file(&config_path, config_content)?;
+
+    // ---
+    // Act
+    // ---
+    let (_, _) = utils::run_command(command_vec).unwrap();
+
+    let mut repo_path = repo_path.clone();
+    repo_path.push("repos");
+    repo_path.push("tinted-jqp");
+
+    let output = Command::new("git")
+        .current_dir(repo_path)
+        .args(vec!["rev-parse", "--verify", "HEAD"])
+        .output()
+        .expect("Failed to execute git rev-parse --verify HEAD");
+
+    let stdout = str::from_utf8(&output.stdout).expect("Not valid UTF-8");
+
+    // ------
+    // Assert
+    // ------
+    // This SHA1 is only reachable through the tinted-test-01 branch, but is not the tip of that
+    // branch.
+    let expected_revision = "f998d17414a7218904bb5b4fdada5daa2b2d9d5e";
+    let has_match = stdout.lines().any(|line| line == expected_revision);
+    cleanup()?;
+    assert!(
+        has_match == true,
+        "Expected revision {} not found",
+        expected_revision,
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_install_subcommand_with_non_existent_revision() -> Result<()> {
+    // -------
+    // Arrange
+    // -------
+    let (config_path, repo_path, command_vec, cleanup) = setup(
+        "test_cli_install_subcommand_with_non_existent_revision",
+        "install",
+    )?;
+    let config_content = r##"[[items]]
+path = "https://github.com/tinted-theming/tinted-jqp"
+name = "tinted-jqp"
+themes-dir = "themes"
+revision = "invalid-revision"
+"##;
+    write_to_file(&config_path, config_content)?;
+
+    let mut repo_path = repo_path.clone();
+    repo_path.push("repos");
+    repo_path.push("tinted-jqp");
+
+    // ---
+    // Act
+    // ---
+    let (_, stderr) = utils::run_command(command_vec).unwrap();
+
+    // ------
+    // Assert
+    // ------
+    let path_exists = repo_path.exists();
+    cleanup()?;
+    assert!(
+        stderr.contains("cannot resolve invalid-revision"),
+        "Expected revision not found",
+    );
+
+    assert!(
+        !path_exists,
+        "Expected repo path {} to not exist",
+        repo_path.display(),
+    );
+
     Ok(())
 }
