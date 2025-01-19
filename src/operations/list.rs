@@ -171,20 +171,34 @@ impl Lightness {
 fn as_json(scheme_files: HashMap<String, SchemeFile>) -> Result<String> {
     let mut keys: Vec<String> = scheme_files.keys().cloned().collect();
     // Create a thread-safe HashMap to collect results
-    let locked_results = Arc::new(Mutex::new(HashMap::new()));
+    let mutex = Arc::new(Mutex::new(HashMap::new()));
     let mut sorted_results: Vec<SchemeEntry> = Vec::new();
-    // We could be parsing hundreds of files. Parallelize with 10 files each arm.
-    keys.par_chunks(10).try_for_each(|chunk| -> Result<()> {
-        for key in chunk {
-            if let Some(scheme) = scheme_files.get(key).and_then(|sf| sf.get_scheme().ok()) {
-                let mut results_lock = locked_results.lock().unwrap();
-                results_lock.insert(key.clone(), SchemeEntry::from_scheme(&scheme));
+    scheme_files
+        .into_iter()
+        .collect::<Vec<_>>()
+        // We could be parsing hundreds of files. Parallelize with 10 files each arm.
+        .par_chunks(10)
+        .map(|chunk| {
+            chunk
+                .into_iter()
+                .filter_map(|(k, sf)| {
+                    sf.get_scheme()
+                        .ok()
+                        .map(|scheme| (k.to_string(), SchemeEntry::from_scheme(&scheme)))
+                })
+                .collect::<HashMap<String, SchemeEntry>>()
+        })
+        .for_each(|map| {
+            // Each batch will produce a HashMap<String, SchemaFile>
+            // Merge them into the final HashMap.
+            if let Ok(mut accum) = mutex.lock() {
+                accum.extend(map);
             }
-        }
-        Ok(())
-    })?;
+        });
+
     keys.sort();
-    let results = locked_results.lock().unwrap();
+    let results = mutex.lock().unwrap();
+
     for k in keys {
         if let Some(v) = results.get(&k) {
             sorted_results.push(v.clone());

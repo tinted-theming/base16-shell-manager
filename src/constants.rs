@@ -6,5 +6,4 @@ pub const SCHEMES_REPO_NAME: &str = "schemes";
 pub const CUSTOM_SCHEMES_DIR_NAME: &str = "custom-schemes";
 pub const CURRENT_SCHEME_FILE_NAME: &str = "current_scheme";
 pub const DEFAULT_SCHEME_SYSTEM: &str = "base16";
-pub const SCHEME_EXTENSION: &str = "yaml";
 pub const SCHEMES_REPO_REVISION: &str = "spec-0.11";

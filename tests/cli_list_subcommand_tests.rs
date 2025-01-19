@@ -122,7 +122,7 @@ fn test_cli_list_subcommand_with_custom() -> Result<()> {
         "",
     )?;
     fs::write(
-        custom_scheme_path.join(format!("{}/{}.yaml", scheme_system, scheme_name_two)),
+        custom_scheme_path.join(format!("{}/{}.yml", scheme_system, scheme_name_two)),
         "",
     )?;
 

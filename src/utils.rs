@@ -1,5 +1,5 @@
 use crate::config::{Config, ConfigItem, DEFAULT_CONFIG_SHELL};
-use crate::constants::{REPO_NAME, SCHEME_EXTENSION};
+use crate::constants::REPO_NAME;
 use anyhow::{anyhow, Context, Error, Result};
 use home::home_dir;
 use rand::Rng;
@@ -392,32 +392,27 @@ pub fn get_all_scheme_file_paths(
             continue;
         }
 
-        for file in fs::read_dir(&scheme_system_dir)? {
-            let file_path = file.as_ref().unwrap().path();
-            let extension = file_path
-                .extension()
-                .unwrap_or_default()
-                .to_str()
-                .unwrap_or_default();
-
-            if extension == SCHEME_EXTENSION {
+        let files = fs::read_dir(&scheme_system_dir)?
+            // Discard failed read results
+            .filter_map(|o| o.ok())
+            .collect::<Vec<_>>()
+            .into_iter()
+            .filter_map(|file| {
+                // Convert batch of files into a HashMap<String, SchemeFile>, where
+                // the key is the scheme's <system>-<slug> e.g. base16-github
+                // Map each entry into a (<String, SchemaFile) tuple that
+                // we can collect() into this batch's HashMap<String, SchemaFile>
                 let name = format!(
                     "{}-{}",
                     scheme_system.as_str(),
-                    file.unwrap()
-                        .path()
-                        .file_stem()
-                        .unwrap_or_default()
-                        .to_str()
-                        .unwrap_or_default()
+                    file.path().file_stem()?.to_str()?,
                 );
-
-                let scheme_file = SchemeFile::new(file_path.as_path())?;
-                scheme_files.insert(name.clone(), scheme_file);
-            }
-        }
+                let scheme_file = SchemeFile::new(file.path().as_path()).ok()?;
+                return Some((name, scheme_file));
+            })
+            .collect::<HashMap<String, SchemeFile>>();
+        scheme_files.extend(files);
     }
-
     Ok(scheme_files)
 }
 
