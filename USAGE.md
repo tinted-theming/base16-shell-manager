@@ -37,6 +37,9 @@ In your startup file (`*rc`) add the following:
 source path/to/tinty-zsh-completion.sh
 ```
 
+Completion will not appear to be working if you've aliased `tinty` as explained
+[here](#sourcing-scripts-that-set-environment-variables). In order to verify the functionality, be sure to run the actual `tinty` binary itself which is usually `~/.cargo/bin/tinty`
+
 ### Completions in the repo
 
 A shell completion generation via `tinty` doesn't include any dynamic
@@ -47,7 +50,7 @@ Currently this is only supported for the `bash` completion file, but we
 plan to include the other shells too. You can find these completion
 files in [contrib/completion].
 
-## How it works
+## How Tinty Works
 
 There are some concepts which some of the following instructions will
 make use of.
@@ -146,27 +149,9 @@ tinty list --custom-schemes # Should show your scheme
 tinty apply base16-your-scheme
 ```
 
-## Alacritty
+## Terminals
 
-```toml
-[[items]]
-path = "https://github.com/tinted-theming/tinted-alacritty"
-name = "tinted-alacritty"
-themes-dir = "colors" # or "colors-256"
-hook = "cp -f %f ~/.config/alacritty/colors.toml && touch ~/.config/alacritty/alacritty.toml"
-```
-
-The hook copies the applied theme contents to
-`~/.config/alacritty/colors.toml` and then does a `touch` on
-`~/.config/alacritty/alacritty.toml` to alert alacritty that the config
-has been updated and it should rerender with the new config.
-
-Make sure your `alacritty.toml` contains the import to the `colors.toml`
-file by including this line:
-
-```toml
-import = ["~/.config/alacritty/colors.toml"]
-```
+See the [tinted-terminal](https://github.com/tinted-theming/tinted-terminal) repo for a list of supported terminals and their setups.
 
 ## Scripting
 
